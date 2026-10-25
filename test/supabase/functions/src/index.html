@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>VoteChain</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=Instrument+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+<style>
+:root{--bg:#0d1526;--panel:#142038;--line:#243456;--tx:#e9eef9;--mut:#93a1bf;--blue:#5b8cff;--seal:#f0b84a;--ok:#4fd1a5;--bad:#ff7a7a;color-scheme:dark}
+*{box-sizing:border-box;margin:0}
+body{background:radial-gradient(900px 500px at 85% -10%,#1d3262 0,transparent 60%),var(--bg);color:var(--tx);font:400 16px/1.55 "Instrument Sans",system-ui,sans-serif;min-height:100vh}
+h1,h2,h3,.logo{font-family:"Bricolage Grotesque",system-ui,sans-serif;letter-spacing:-.02em}
+a{color:inherit}
+button,input,textarea{font:inherit;color:inherit}
+:focus-visible{outline:2px solid var(--seal);outline-offset:2px}
+.wrap{max-width:960px;margin:0 auto;padding:0 20px 80px}
+nav{display:flex;justify-content:space-between;align-items:center;padding:22px 0}
+.logo{font-weight:700;font-size:22px;text-decoration:none;display:flex;gap:10px;align-items:center}
+.logo i{display:inline-flex;gap:3px}.logo i b{width:9px;height:18px;border:2px solid var(--seal);border-radius:3px}.logo i b+b{border-color:var(--blue);transform:translateX(-4px)}
+.who{display:flex;gap:12px;align-items:center;color:var(--mut);font-size:14px}
+.btn{background:var(--blue);border:0;border-radius:10px;padding:10px 18px;font-weight:600;cursor:pointer;color:#071022}
+.btn:hover{filter:brightness(1.1)}.btn:disabled{opacity:.5;cursor:wait}
+.btn.ghost{background:transparent;border:1px solid var(--line);color:var(--tx)}
+.hero{padding:48px 0 28px;max-width:640px}
+.hero h1{font-size:clamp(34px,6vw,56px);line-height:1.05;margin-bottom:14px}
+.hero p{color:var(--mut);font-size:18px}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:16px;padding:22px}
+.auth{max-width:400px;margin:28px 0}
+.auth form{display:grid;gap:12px;margin-top:14px}
+label{display:grid;gap:6px;font-size:14px;color:var(--mut)}
+input,textarea{background:#0f1930;border:1px solid var(--line);border-radius:10px;padding:11px 13px;width:100%}
+textarea{min-height:96px;resize:vertical}
+.msg{font-size:14px;min-height:20px}.msg.err{color:var(--bad)}.msg.ok{color:var(--ok)}
+.link{background:none;border:0;color:var(--blue);cursor:pointer;padding:0}
+.bar{display:flex;justify-content:space-between;align-items:center;margin:30px 0 14px}
+.list{display:grid;gap:12px}
+.row{display:grid;grid-template-columns:1fr auto;gap:6px 16px;text-decoration:none;transition:border-color .15s}
+.row:hover{border-color:var(--blue)}
+.row h3{font-size:20px}.row p{color:var(--mut);font-size:14px}
+.tag{font-size:13px;padding:3px 10px;border-radius:99px;border:1px solid var(--line);color:var(--mut);align-self:start;white-space:nowrap}
+.tag.open{color:var(--ok);border-color:#2b6b59}.tag.voted{color:var(--seal);border-color:#7a5f25}
+.opt{display:grid;gap:6px;margin:12px 0}
+.opt .top{display:flex;justify-content:space-between;gap:12px;align-items:center}
+.track{height:12px;background:#0f1930;border-radius:99px;overflow:hidden}
+.fill{height:100%;background:linear-gradient(90deg,var(--blue),#8fb0ff);border-radius:99px;transition:width .6s}
+.fill.lead{background:linear-gradient(90deg,var(--seal),#ffd98a)}
+.two{display:grid;grid-template-columns:1.2fr 1fr;gap:18px}
+@media(max-width:760px){.two{grid-template-columns:1fr}}
+.chain{display:grid;gap:0;margin-top:10px}
+.blk{border:1px solid var(--line);border-radius:10px;padding:9px 12px;font:12px/1.4 ui-monospace,Menlo,monospace;background:#0f1930;word-break:break-all;animation:drop .4s}
+.blk+.blk{margin-top:14px;position:relative}
+.blk+.blk::before{content:"";position:absolute;left:22px;top:-15px;height:14px;border-left:2px solid var(--seal)}
+.blk small{color:var(--mut)}.blk b{color:var(--seal);font-weight:500}
+@keyframes drop{from{opacity:0;transform:translateY(-8px)}}
+.verify{display:flex;gap:8px;align-items:center;font-size:14px;margin-top:4px}
+.dot{width:10px;height:10px;border-radius:50%;background:var(--ok)}.dot.bad{background:var(--bad)}
+.back{display:inline-block;margin:6px 0 14px;color:var(--mut);text-decoration:none;font-size:14px}
+dialog{background:var(--panel);color:var(--tx);border:1px solid var(--line);border-radius:16px;padding:24px;width:min(480px,92vw)}
+dialog::backdrop{background:#050a14b0}
+dialog form{display:grid;gap:12px}
+.toast{position:fixed;bottom:20px;left:50%;transform:translateX(-50%);background:var(--panel);border:1px solid var(--line);padding:10px 18px;border-radius:10px;z-index:9}
+@media(prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <nav><a class="logo" href="#/"><i><b></b><b></b></i>VoteChain</a><div class="who" id="who"></div></nav>
+  <main id="app"></main>
+</div>
+<dialog id="dlg"></dialog>
+<script>
+// ---- Config: your Supabase project ----
+const SUPABASE_URL = "https://ujjzhbqjgxysfcbruhli.supabase.co";
+const SUPABASE_KEY = "sb_publishable_LdReOPdaGRvsh8G9siuCjQ_zsjCp2_C";
+const sb = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+
+const $ = s => document.querySelector(s), app = $("#app");
+const esc = s => String(s ?? "").replace(/[&<>"]/g, c => ({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
+let user = null, channel = null, mode = "signin";
+
+function toast(t){const d=document.createElement("div");d.className="toast";d.textContent=t;document.body.append(d);setTimeout(()=>d.remove(),2800)}
+const short = h => h.slice(0,10)+"…"+h.slice(-6);
+const closed = e => new Date(e.ends_at) <= new Date();
+const timeLeft = e => { const ms=new Date(e.ends_at)-new Date(); if(ms<=0)return "Closed";
+  const h=Math.floor(ms/36e5); return h>=48?`Closes in ${Math.floor(h/24)} days`:h>=1?`Closes in ${h} h`:`Closes in ${Math.max(1,Math.floor(ms/6e4))} min`; };
+
+// ---- Auth ----
+function authView(){
+  const up = mode === "signup";
+  app.innerHTML = `
+  <section class="hero"><h1>Every vote counted. Every vote provable.</h1>
+  <p>Cast your ballot, watch results update live, and verify the ledger yourself. Each vote is sealed into a hash chain that anyone can check.</p></section>
+  <div class="card auth"><h2>${up?"Create your account":"Sign in to vote"}</h2>
+  <form id="af">
+    ${up?`<label>Display name<input name="name" required maxlength="40" autocomplete="nickname"></label>`:""}
+    <label>Email<input name="email" type="email" required autocomplete="email"></label>
+    <label>Password<input name="pw" type="password" required minlength="6" autocomplete="${up?"new-password":"current-password"}"></label>
+    <button class="btn" id="abtn">${up?"Create account":"Sign in"}</button>
+    <div class="msg" id="amsg" role="status"></div>
+  </form>
+  <p style="font-size:14px;color:var(--mut)">${up?"Have an account?":"New here?"} <button class="link" id="swap">${up?"Sign in":"Create an account"}</button></p></div>`;
+  $("#swap").onclick = () => { mode = up ? "signin" : "signup"; authView(); };
+  $("#af").onsubmit = async e => {
+    e.preventDefault(); const f = new FormData(e.target), m = $("#amsg"), b = $("#abtn");
+    b.disabled = true; m.className = "msg"; m.textContent = "";
+    const email = f.get("email"), password = f.get("pw");
+    const { data, error } = up
+      ? await sb.auth.signUp({ email, password, options: { data: { display_name: f.get("name") } } })
+      : await sb.auth.signInWithPassword({ email, password });
+    b.disabled = false;
+    if (error) { m.className = "msg err"; m.textContent = error.message; return; }
+    if (up && !data.session) { m.className = "msg ok"; m.textContent = "Check your email to confirm your account, then sign in."; }
+  };
+}
+
+// ---- Elections list ----
+async function listView(){
+  const [{ data: els, error }, { data: ballots }, { data: res }] = await Promise.all([
+    sb.from("elections").select("*").order("created_at", { ascending: false }),
+    sb.from("ballots").select("election_id"),
+    sb.from("election_results").select("election_id,votes")]);
+  if (error) return app.innerHTML = `<p class="msg err">${esc(error.message)}. Did you run db/schema.sql?</p>`;
+  const voted = new Set((ballots||[]).map(b => b.election_id)), tot = {};
+  (res||[]).forEach(r => tot[r.election_id] = (tot[r.election_id]||0) + r.votes);
+  app.innerHTML = `<section class="hero"><h1>Open elections</h1><p>Pick one to vote or see live results.</p></section>
+  <div class="bar"><h2>All elections</h2><button class="btn" id="new">New election</button></div>
+  <div class="list">${(els||[]).map(e => `<a class="card row" href="#/e/${e.id}">
+    <h3>${esc(e.title)}</h3><span class="tag ${voted.has(e.id)?"voted":closed(e)?"":"open"}">${voted.has(e.id)?"You voted":closed(e)?"Closed":"Open"}</span>
+    <p>${tot[e.id]||0} votes · ${timeLeft(e)}</p></a>`).join("") || `<div class="card">No elections yet. Create the first one.</div>`}</div>`;
+  $("#new").onclick = newDialog;
+}
+
+// ---- Election detail ----
+async function detailView(id){
+    const phase = e => Date.now() < +new Date(e.registration_ends_at) ? "register"
+                 : Date.now() < +new Date(e.ends_at) ? "vote" : "closed";
+// register: "Join this election" button -> register(e, user.id)
+// vote:     vote buttons -> castVote(e, option)   (only if the user registered)
+// closed:   if reveal_mode === "timelock", call the reveal function once, then refresh results
+  const [{ data: e }, { data: res }, { data: mine }, { data: chain }] = await Promise.all([
+    sb.from("elections").select("*").eq("id", id).single(),
+    sb.from("election_results").select("*").eq("election_id", id).order("label"),
+    sb.from("ballots").select("election_id").eq("election_id", id),
+    sb.from("votes").select("id,prev_hash,hash,created_at").eq("election_id", id).order("id")]);
+  if (!e) return app.innerHTML = `<a class="back" href="#/">Back</a><p>Election not found.</p>`;
+  const total = res.reduce((a, r) => a + r.votes, 0), max = Math.max(...res.map(r => r.votes), 0);
+  const has = mine.length > 0, can = !has && !closed(e);
+  const linked = chain.every((v, i) => v.prev_hash === (i ? chain[i-1].hash : "0".repeat(64)));
+  app.innerHTML = `<a class="back" href="#/">All elections</a>
+  <h1 style="font-size:36px">${esc(e.title)}</h1><p style="color:var(--mut);margin:6px 0 20px">${esc(e.description||"")} ${timeLeft(e)}.</p>
+  <div class="two"><div class="card"><h3>${can?"Choose one option":has?"You have voted":"Final results"}</h3>
+  ${res.map(r => `<div class="opt"><div class="top"><span>${esc(r.label)}</span>
+    <span>${r.votes} · ${total?Math.round(r.votes/total*100):0}%${can?` <button class="btn ghost" data-v="${r.option_id}" style="margin-left:8px;padding:6px 12px">Vote</button>`:""}</span></div>
+    <div class="track"><div class="fill ${r.votes&&r.votes===max?"lead":""}" style="width:${total?r.votes/total*100:0}%"></div></div></div>`).join("")}
+  <p style="color:var(--mut);font-size:14px">${total} votes cast. Results update live.</p></div>
+  <div class="card"><h3>Ledger</h3>
+  <div class="verify"><span class="dot ${linked?"":"bad"}"></span>${linked?"Chain intact: every block links to the one before":"Chain broken: a block does not match its predecessor"}</div>
+  <div class="chain">${chain.slice(-6).reverse().map(v => `<div class="blk"><small>Block ${v.id}</small><br><b>${short(v.hash)}</b><br><small>prev ${short(v.prev_hash)}</small></div>`).join("") || `<small style="color:var(--mut)">No blocks yet. The first vote starts the chain.</small>`}</div></div></div>`;
+  app.querySelectorAll("[data-v]").forEach(b => b.onclick = async () => {
+    app.querySelectorAll("[data-v]").forEach(x => x.disabled = true);
+    const { error } = await sb.rpc("cast_vote", { p_option: b.dataset.v });
+    toast(error ? error.message : "Vote recorded"); detailView(id);
+  });
+  if (channel) sb.removeChannel(channel);
+  channel = sb.channel("votes-" + id).on("postgres_changes", { event: "INSERT", schema: "public", table: "votes", filter: `election_id=eq.${id}` }, () => detailView(id)).subscribe();
+}
+
+
+// ---- Create election ----
+function newDialog(){
+  const d = $("#dlg");
+  d.innerHTML = `<form id="nf"><h2>New election</h2>
+  <label>Question<input name="t" required minlength="3" maxlength="140" placeholder="Which proposal should we fund?"></label>
+  <label>Details (optional)<input name="d" maxlength="300"></label>
+  <label>Options, one per line (2 to 8)<textarea name="o" required></textarea></label>
+  <label>Open for (hours)<input name="h" type="number" min="1" max="720" value="72" required></label>
+  <div class="msg err" id="nmsg"></div>
+  <div style="display:flex;gap:10px;justify-content:flex-end"><button type="button" class="btn ghost" id="nc">Cancel</button><button class="btn">Publish election</button></div></form>`;
+  d.showModal(); $("#nc").onclick = () => d.close();
+  $("#nf").onsubmit = async e => {
+    const endsMs = Date.now() + hours * 36e5;
+const row = { title, description, ends_at: new Date(endsMs).toISOString(),
+  registration_ends_at: new Date(Date.now() + regHours * 36e5).toISOString(), reveal_mode };
+if (reveal_mode === "timelock")
+  row.drand_round = roundAt(endsMs, await mainnetClient().chain().info());
+if (gateContract) {   // also check eth_chainId matches the chain you configured
+  Object.assign(row, { gate_chain_id: chainId, gate_contract: gateContract, gate_min_balance: "1",
+    snapshot_block: parseInt(await window.ethereum.request({ method: "eth_blockNumber" }), 16) });
+}
+// options now need a position: opts.map((label, position) => ({ election_id, label, position }))
+    e.preventDefault(); const f = new FormData(e.target);
+    const opts = [...new Set(f.get("o").split("\n").map(s => s.trim()).filter(Boolean))].slice(0, 8);
+    if (opts.length < 2) return $("#nmsg").textContent = "Add at least two different options.";
+    const ends = new Date(Date.now() + f.get("h") * 36e5).toISOString();
+    const { data: el, error } = await sb.from("elections").insert({ title: f.get("t"), description: f.get("d"), ends_at: ends }).select().single();
+    if (error) return $("#nmsg").textContent = error.message;
+    const { error: e2 } = await sb.from("options").insert(opts.map(label => ({ election_id: el.id, label })));
+    if (e2) return $("#nmsg").textContent = e2.message;
+    d.close(); toast("Published"); location.hash = "#/e/" + el.id;
+  };
+}
+
+// ---- Router ----
+async function render(){
+  if (channel) { sb.removeChannel(channel); channel = null; }
+  const name = user?.user_metadata?.display_name || user?.email || "";
+  $("#who").innerHTML = user ? `<span>${esc(name)}</span><button class="btn ghost" id="out">Sign out</button>` : "";
+  if (user) $("#out").onclick = () => sb.auth.signOut();
+  if (!user) return authView();
+  const m = location.hash.match(/^#\/e\/(.+)$/);
+  m ? detailView(m[1]) : listView();
+}
+window.addEventListener("hashchange", render);
+(async () => {
+  const { data } = await sb.auth.getSession(); user = data.session?.user || null;
+  sb.auth.onAuthStateChange((_ev, s) => { const n = s?.user || null; if ((n?.id||null) !== (user?.id||null)) { user = n; render(); } });
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Web3 Demo</title>
+<script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/web3@4.16.0/dist/web3.min.js"></script>
+</head>
+<body>
+    <h1>Web3 Demo</h1>
+
+    <p id="account">Loading account...</p>
+
+    <script>
+        const web3 = new Web3("http://127.0.0.1:7545" );
+
+        web3.eth.getAccounts()
+            .then((accounts) => {
+                document.getElementById("account").textContent =
+                    "Connected account: " + accounts[0];
+            })
+            .catch((error) => {
+                document.getElementById("account").textContent =
+                    "Connection failed";
+                console.error("Connection error:", error);
+            });
+    </script>
+</body>
+</html>
